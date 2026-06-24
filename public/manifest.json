@@ -1,11 +1,60 @@
 {
   "name": "Daily Life Manager",
   "short_name": "DailyLife",
-  "description": "Self-hosted daily life manager",
+  "description": "Self-hosted daily life manager: tasks, reminders, plans, gym, food, and work tracking.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#161a18",
   "theme_color": "#10b981",
-  "orientation": "portrait",
-  "icons": []
+  "categories": ["productivity", "lifestyle", "health"],
+  "lang": "id",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tugas",
+      "short_name": "Tugas",
+      "description": "Lihat daftar tugas",
+      "url": "/?view=tasks"
+    },
+    {
+      "name": "Tambah Tugas",
+      "short_name": "Tambah",
+      "description": "Tambah tugas baru",
+      "url": "/?view=tasks&action=new"
+    },
+    {
+      "name": "Makanan",
+      "short_name": "Makanan",
+      "description": "Log makanan hari ini",
+      "url": "/?view=food"
+    }
+  ]
 }

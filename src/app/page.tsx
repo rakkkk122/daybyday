@@ -2,9 +2,11 @@
 
 import * as React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Settings } from 'lucide-react'
 import { useUIStore } from '@/store/ui-store'
 import { Sidebar, BottomNav } from '@/components/nav-shell'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { SettingsSheet } from '@/components/settings-sheet'
 import { DashboardView } from '@/components/views/dashboard'
 import { TasksView } from '@/components/views/tasks'
 import { RemindersView } from '@/components/views/reminders'
@@ -14,7 +16,23 @@ import { FoodView } from '@/components/views/food'
 import { WorkView } from '@/components/views/work'
 
 export default function Home() {
-  const { activeView } = useUIStore()
+  const { activeView, setActiveView } = useUIStore()
+  const [settingsOpen, setSettingsOpen] = React.useState(false)
+  // Simple refresh key — bumping it forces views to reload after import
+  const [refreshKey, setRefreshKey] = React.useState(0)
+
+  // Handle PWA shortcut deep links like /?view=tasks
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const view = params.get('view') as typeof activeView | null
+    if (
+      view &&
+      ['dashboard', 'tasks', 'reminders', 'plans', 'gym', 'food', 'work'].includes(view)
+    ) {
+      setActiveView(view)
+    }
+  }, [setActiveView])
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -26,21 +44,37 @@ export default function Home() {
         style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top))' }}
       >
         <div className="md:hidden flex items-center gap-2">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="text-muted-foreground hover:text-foreground p-1 -ml-1"
+            aria-label="Pengaturan"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
           <span className="text-base font-bold tracking-tight">
             Daily<span className="text-primary">Life</span>
           </span>
         </div>
-        <div className="hidden md:block text-sm text-muted-foreground">
-          Personal Manager — Self-hosted
+        <div className="hidden md:flex md:items-center md:gap-3 text-sm text-muted-foreground">
+          <span>Personal Manager — Self-hosted</span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="text-muted-foreground hover:text-foreground p-2 rounded-md hover:bg-accent/50"
+            aria-label="Pengaturan"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Main content */}
       <main className="flex-1 md:pl-64">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeView}
+            key={`${activeView}-${refreshKey}`}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
@@ -61,8 +95,12 @@ export default function Home() {
 
       {/* Spacer for bottom nav on mobile */}
       <div className="h-16 md:hidden" aria-hidden />
+
+      <SettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onChanged={() => setRefreshKey((k) => k + 1)}
+      />
     </div>
   )
 }
-// trigger compile
-// trigger 2
