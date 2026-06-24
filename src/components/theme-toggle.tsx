@@ -16,10 +16,9 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
-      size="icon"
       aria-label="Ganti tema"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="rounded-full"
+      className="rounded-full h-10 w-10"
     >
       {mounted ? (
         isDark ? (

@@ -39,12 +39,13 @@ export function BottomNav() {
               key={item.key}
               onClick={() => setActiveView(item.key)}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium transition-all active:scale-95',
+                'flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium transition-all active:scale-95 min-h-[44px]',
                 active
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               )}
               aria-current={active ? 'page' : undefined}
+              aria-label={item.label}
             >
               <Icon className={cn('h-5 w-5', active && 'scale-110')} />
               <span className="truncate max-w-full">{item.label}</span>

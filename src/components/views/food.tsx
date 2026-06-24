@@ -122,7 +122,7 @@ export function FoodView() {
   }))
 
   return (
-    <div className="space-y-4 p-4 md:p-6 max-w-3xl mx-auto pb-24 md:pb-6">
+    <div className="space-y-4 p-4 md:p-6 max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto pb-24 md:pb-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Makanan & Gizi</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -132,7 +132,7 @@ export function FoodView() {
 
       {/* Date picker */}
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" size="icon" onClick={() => changeDate(-1)} aria-label="Hari sebelumnya">
+        <Button variant="outline" size="icon" onClick={() => changeDate(-1)} aria-label="Hari sebelumnya" className="h-10 w-10">
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 text-center">
@@ -141,7 +141,7 @@ export function FoodView() {
             <p className="text-xs text-primary">Hari ini</p>
           )}
         </div>
-        <Button variant="outline" size="icon" onClick={() => changeDate(1)} aria-label="Hari berikutnya">
+        <Button variant="outline" size="icon" onClick={() => changeDate(1)} aria-label="Hari berikutnya" className="h-10 w-10">
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

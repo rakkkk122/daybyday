@@ -47,7 +47,8 @@ export default function Home() {
         <div className="md:hidden flex items-center gap-2">
           <button
             onClick={() => setSettingsOpen(true)}
-            className="text-muted-foreground hover:text-foreground p-1 -ml-1"
+            style={{ width: 40, height: 40 }}
+            className="text-muted-foreground hover:text-foreground -ml-1 rounded-md hover:bg-accent/40 shrink-0 flex items-center justify-center"
             aria-label="Pengaturan"
           >
             <Settings className="h-5 w-5" />
@@ -62,7 +63,8 @@ export default function Home() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setSettingsOpen(true)}
-            className="text-muted-foreground hover:text-foreground p-2 rounded-md hover:bg-accent/50"
+            style={{ width: 40, height: 40 }}
+            className="text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 shrink-0 flex items-center justify-center"
             aria-label="Pengaturan"
           >
             <Settings className="h-5 w-5" />

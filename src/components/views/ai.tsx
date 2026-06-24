@@ -109,7 +109,7 @@ export function AiView() {
   const [tab, setTab] = React.useState<'food' | 'plan' | 'insights'>('food')
 
   return (
-    <div className="space-y-4 p-4 md:p-6 max-w-3xl mx-auto pb-24 md:pb-6">
+    <div className="space-y-4 p-4 md:p-6 max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto pb-24 md:pb-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
           <Sparkles className="h-6 w-6 text-primary" />
@@ -121,18 +121,18 @@ export function AiView() {
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-        <TabsList className="grid grid-cols-3 w-full">
-          <TabsTrigger value="food" className="gap-1.5">
+        <TabsList className="grid grid-cols-3 w-full h-12">
+          <TabsTrigger value="food" className="gap-1.5 py-2">
             <UtensilsCrossed className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Saran Makanan</span>
             <span className="sm:hidden">Makanan</span>
           </TabsTrigger>
-          <TabsTrigger value="plan" className="gap-1.5">
+          <TabsTrigger value="plan" className="gap-1.5 py-2">
             <Target className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Buat Rencana</span>
             <span className="sm:hidden">Rencana</span>
           </TabsTrigger>
-          <TabsTrigger value="insights" className="gap-1.5">
+          <TabsTrigger value="insights" className="gap-1.5 py-2">
             <TrendingUp className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Insight</span>
             <span className="sm:hidden">Insight</span>

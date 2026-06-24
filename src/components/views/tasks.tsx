@@ -141,7 +141,7 @@ export function TasksView() {
   }, [filtered])
 
   return (
-    <div className="space-y-4 p-4 md:p-6 max-w-3xl mx-auto pb-24 md:pb-6">
+    <div className="space-y-4 p-4 md:p-6 max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto pb-24 md:pb-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Tugas</h1>
@@ -159,7 +159,7 @@ export function TasksView() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`shrink-0 rounded-full px-3.5 py-2 text-xs font-medium transition-colors min-h-[36px] ${
               filter === f
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
