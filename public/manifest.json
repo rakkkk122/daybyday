@@ -1,0 +1,11 @@
+{
+  "name": "Daily Life Manager",
+  "short_name": "DailyLife",
+  "description": "Self-hosted daily life manager",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#161a18",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "icons": []
+}

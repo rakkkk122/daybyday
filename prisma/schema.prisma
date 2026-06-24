@@ -1,0 +1,145 @@
+// Daily Life Manager - Prisma Schema
+// Self-hosted on Termux with SQLite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ TASKS ============
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  notes       String?
+  priority    String   @default("medium") // low | medium | high
+  category    String   @default("personal") // personal | work | gym | food | other
+  status      String   @default("pending") // pending | done
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ============ REMINDERS ============
+model Reminder {
+  id        String   @id @default(cuid())
+  title     String
+  notes     String?
+  datetime  DateTime
+  repeat    String?  // none | daily | weekly | monthly
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([datetime])
+  @@index([done])
+}
+
+// ============ PLANS / GOALS ============
+model Plan {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  color       String         @default("emerald")
+  targetDate  DateTime?
+  status      String         @default("active") // active | done | archived
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  milestones  PlanMilestone[]
+
+  @@index([status])
+}
+
+model PlanMilestone {
+  id        String   @id @default(cuid())
+  planId    String
+  plan      Plan     @relation(onDelete: Cascade, fields: [planId], references: [id])
+  title     String
+  done      Boolean  @default(false)
+  dueDate   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId])
+}
+
+// ============ GYM / WORKOUTS ============
+model GymWorkout {
+  id        String        @id @default(cuid())
+  date      DateTime      @default(now())
+  type      String        @default("strength") // strength | cardio | flexibility | sport
+  duration  Int           @default(0) // minutes
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  exercises GymExercise[]
+
+  @@index([date])
+}
+
+model GymExercise {
+  id        String     @id @default(cuid())
+  workoutId String
+  workout   GymWorkout @relation(onDelete: Cascade, fields: [workoutId], references: [id])
+  name      String
+  sets      Int        @default(3)
+  reps      Int        @default(10)
+  weight    Float      @default(0) // kg
+  notes     String?
+  createdAt DateTime   @default(now())
+
+  @@index([workoutId])
+}
+
+// ============ FOOD / NUTRITION ============
+model FoodLog {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  mealType  String   @default("snack") // breakfast | lunch | dinner | snack
+  foodName  String
+  calories  Int      @default(0)
+  protein   Float    @default(0) // grams
+  carbs     Float    @default(0) // grams
+  fats      Float    @default(0) // grams
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
+
+// ============ WORK PROJECTS ============
+model WorkProject {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  color       String         @default("amber")
+  status      String         @default("active") // active | paused | done | archived
+  deadline    DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  sessions    WorkSession[]
+
+  @@index([status])
+}
+
+model WorkSession {
+  id        String   @id @default(cuid())
+  projectId String
+  project   WorkProject @relation(onDelete: Cascade, fields: [projectId], references: [id])
+  start     DateTime @default(now())
+  end       DateTime?
+  duration  Int      @default(0) // minutes
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([start])
+}
