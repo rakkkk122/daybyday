@@ -20,8 +20,12 @@ import { StatsView } from '@/components/views/stats'
 export default function Home() {
   const { activeView, setActiveView } = useUIStore()
   const [settingsOpen, setSettingsOpen] = React.useState(false)
-  // Simple refresh key — bumping it forces views to reload after import
   const [refreshKey, setRefreshKey] = React.useState(0)
+  // Hydration guard: Zustand persist baca localStorage di client,
+  // jadi activeView bisa beda antara server render dan client.
+  // Tunggu mount dulu sebelum render view-specific content.
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
 
   // Handle PWA shortcut deep links like /?view=tasks
   React.useEffect(() => {
@@ -35,6 +39,11 @@ export default function Home() {
       setActiveView(view)
     }
   }, [setActiveView])
+
+  // Tentukan view yang dirender
+  // Sebelum mounted (SSR + first client render): selalu render dashboard (default)
+  // Setelah mounted: render activeView sebenarnya dari localStorage
+  const currentView = mounted ? activeView : 'dashboard'
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -78,21 +87,21 @@ export default function Home() {
       <main className="flex-1 md:pl-64">
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${activeView}-${refreshKey}`}
+            key={`${currentView}-${refreshKey}`}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18 }}
           >
-            {activeView === 'dashboard' && <DashboardView />}
-            {activeView === 'tasks' && <TasksView />}
-            {activeView === 'reminders' && <RemindersView />}
-            {activeView === 'plans' && <PlansView />}
-            {activeView === 'gym' && <GymView />}
-            {activeView === 'food' && <FoodView />}
-            {activeView === 'work' && <WorkView />}
-            {activeView === 'ai' && <AiView />}
-            {activeView === 'stats' && <StatsView />}
+            {currentView === 'dashboard' && <DashboardView />}
+            {currentView === 'tasks' && <TasksView />}
+            {currentView === 'reminders' && <RemindersView />}
+            {currentView === 'plans' && <PlansView />}
+            {currentView === 'gym' && <GymView />}
+            {currentView === 'food' && <FoodView />}
+            {currentView === 'work' && <WorkView />}
+            {currentView === 'ai' && <AiView />}
+            {currentView === 'stats' && <StatsView />}
           </motion.div>
         </AnimatePresence>
       </main>
