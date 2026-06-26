@@ -1,58 +1,36 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { tasks, reminders, plans, planMilestones, gymWorkouts, gymExercises, foodLogs, workProjects, workSessions } from '@/db/schema'
+import { serializeRows } from '@/lib/serialize'
 
-/**
- * GET /api/backup/export
- * Returns a JSON file containing all user data.
- */
 export async function GET() {
-  const [
-    tasks,
-    reminders,
-    plans,
-    milestones,
-    workouts,
-    exercises,
-    foodLogs,
-    workProjects,
-    workSessions,
-  ] = await Promise.all([
-    db.task.findMany(),
-    db.reminder.findMany(),
-    db.plan.findMany(),
-    db.planMilestone.findMany(),
-    db.gymWorkout.findMany(),
-    db.gymExercise.findMany(),
-    db.foodLog.findMany(),
-    db.workProject.findMany(),
-    db.workSession.findMany(),
+  const [tasksRows, remindersRows, plansRows, milestonesRows, workoutsRows, exercisesRows, foodLogsRows, workProjectsRows, workSessionsRows] = await Promise.all([
+    db.select().from(tasks), db.select().from(reminders), db.select().from(plans),
+    db.select().from(planMilestones), db.select().from(gymWorkouts), db.select().from(gymExercises),
+    db.select().from(foodLogs), db.select().from(workProjects), db.select().from(workSessions),
   ])
 
   const payload = {
-    version: 1,
-    app: 'dailylife',
-    exportedAt: new Date().toISOString(),
+    version: 2, app: 'dailylife', exportedAt: new Date().toISOString(),
     data: {
-      tasks,
-      reminders,
-      plans,
-      milestones,
-      workouts,
-      exercises,
-      foodLogs,
-      workProjects,
-      workSessions,
+      tasks: serializeRows(tasksRows as any[]),
+      reminders: serializeRows(remindersRows as any[]),
+      plans: serializeRows(plansRows as any[]),
+      milestones: serializeRows(milestonesRows as any[]),
+      workouts: serializeRows(workoutsRows as any[]),
+      exercises: serializeRows(exercisesRows as any[]),
+      foodLogs: serializeRows(foodLogsRows as any[]),
+      workProjects: serializeRows(workProjectsRows as any[]),
+      workSessions: serializeRows(workSessionsRows as any[]),
     },
   }
 
   const stamp = new Date().toISOString().slice(0, 10)
-  const filename = `dailylife-backup-${stamp}.json`
-
   return new NextResponse(JSON.stringify(payload, null, 2), {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': `attachment; filename="dailylife-backup-${stamp}.json"`,
       'Cache-Control': 'no-store',
     },
   })

@@ -1,32 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { workSessions } from '@/db/schema'
+import { eq } from 'drizzle-orm'
+import { serializeRow, parseDate } from '@/lib/serialize'
+import { handleApiError } from '@/lib/api-error'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const body = await req.json()
-  let duration: number | undefined
-  let end: Date | null | undefined
-  if (body.end) {
-    end = new Date(body.end)
-    // need start to compute duration; fetch first
-    const existing = await db.workSession.findUnique({ where: { id } })
-    if (existing) {
-      duration = Math.round((end.getTime() - existing.start.getTime()) / 60000)
+  try {
+    const { id } = await params
+    const body = await req.json()
+    const updates: Record<string, any> = {}
+    if (body.end !== undefined) {
+      updates.end = parseDate(body.end)
+      const [existing] = await db.select().from(workSessions).where(eq(workSessions.id, id))
+      if (existing && updates.end) {
+        updates.duration = Math.round((updates.end - existing.start) / 60000)
+      }
     }
+    if (body.notes !== undefined) updates.notes = body.notes
+
+    await db.update(workSessions).set(updates).where(eq(workSessions.id, id))
+    const [updated] = await db.select().from(workSessions).where(eq(workSessions.id, id))
+    return NextResponse.json(serializeRow(updated as any))
+  } catch (e) {
+    return handleApiError(e, 'work/sessions PATCH')
   }
-  const session = await db.workSession.update({
-    where: { id },
-    data: {
-      ...(end !== undefined && { end }),
-      ...(duration !== undefined && { duration }),
-      ...(body.notes !== undefined && { notes: body.notes }),
-    },
-  })
-  return NextResponse.json(session)
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  await db.workSession.delete({ where: { id } })
-  return NextResponse.json({ ok: true })
+  try {
+    const { id } = await params
+    await db.delete(workSessions).where(eq(workSessions.id, id))
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    return handleApiError(e, 'work/sessions DELETE')
+  }
 }

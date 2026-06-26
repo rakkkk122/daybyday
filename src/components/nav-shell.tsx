@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { LayoutDashboard, CheckSquare, Bell, Target, Dumbbell, UtensilsCrossed, Briefcase, Sparkles } from 'lucide-react'
+import { LayoutDashboard, CheckSquare, Bell, Target, Dumbbell, UtensilsCrossed, Briefcase, Sparkles, BarChart3 } from 'lucide-react'
 import { useUIStore, type ViewKey } from '@/store/ui-store'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +20,7 @@ const NAV: NavItem[] = [
   { key: 'food', label: 'Makanan', icon: UtensilsCrossed },
   { key: 'work', label: 'Kerja', icon: Briefcase },
   { key: 'ai', label: 'AI', icon: Sparkles },
+  { key: 'stats', label: 'Statistik', icon: BarChart3 },
 ]
 
 export function BottomNav() {
@@ -30,7 +31,7 @@ export function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navigasi utama"
     >
-      <div className="grid grid-cols-8 gap-0.5 px-1 py-1.5">
+      <div className="grid grid-cols-9 gap-0.5 px-1 py-1.5">
         {NAV.map((item) => {
           const active = activeView === item.key
           const Icon = item.icon

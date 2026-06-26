@@ -131,3 +131,57 @@
     scrollbar-width: none;
   }
 }
+
+/* === PDF generation: show header/footer only when capturing === */
+/* By default (screen), PDFHeader & PDFFooter are hidden via `hidden print:block` */
+/* When html2canvas captures, it captures what's visible on screen. */
+/* So we use a `.pdf-capture` parent class to force-show them. */
+.pdf-capture .print\:block {
+  display: block !important;
+}
+.pdf-capture .hidden.print\:block {
+  display: block !important;
+}
+
+/* === Print styles for "Download PDF" via window.print() === */
+/* Saat user click Download PDF, body dapat class `printing-stats` */
+/* lalu window.print() dipanggil. Browser akan render hanya element .stats-report */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+  /* Show only the stats report */
+  .stats-report,
+  .stats-report * {
+    visibility: visible;
+  }
+  /* Position report at top of page */
+  .stats-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #ffffff !important;
+  }
+  /* Force simple colors (override oklch/lab yang browser print mungkin struggle) */
+  * {
+    color: #1f2937 !important;
+    background-color: transparent !important;
+    border-color: #d1d5db !important;
+  }
+  /* Keep chart colors visible */
+  svg * {
+    color: initial !important;
+  }
+  /* Page setup */
+  @page {
+    margin: 12mm;
+    size: A4 portrait;
+  }
+  /* Avoid breaking inside cards */
+  .print-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

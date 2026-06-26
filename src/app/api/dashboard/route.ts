@@ -1,75 +1,70 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { tasks, reminders, plans, planMilestones, gymWorkouts, foodLogs, workProjects, workSessions } from '@/db/schema'
+import { eq, gte, lte, and, asc, desc } from 'drizzle-orm'
+import { handleApiError } from '@/lib/api-error'
+import { serializeRows } from '@/lib/serialize'
 
 export async function GET() {
-  const now = new Date()
-  const startOfDay = new Date(now)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(now)
-  endOfDay.setHours(23, 59, 59, 999)
+  try {
+    const nowMs = Date.now()
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999)
+    const startOfWeek = new Date()
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
 
-  const startOfWeek = new Date(now)
-  startOfWeek.setDate(now.getDate() - now.getDay())
-  startOfWeek.setHours(0, 0, 0, 0)
+    const [allTasks, allReminders, activePlans, allMilestones, weekWorkouts, todayFoodLogs, activeWorkProjects, allWorkSessions] = await Promise.all([
+      db.select().from(tasks).orderBy(asc(tasks.status), desc(tasks.createdAt)),
+      db.select().from(reminders).where(eq(reminders.done, false)).orderBy(asc(reminders.datetime)),
+      db.select().from(plans).where(eq(plans.status, 'active')),
+      db.select().from(planMilestones),
+      db.select().from(gymWorkouts).where(gte(gymWorkouts.date, startOfWeek.getTime())),
+      db.select().from(foodLogs).where(and(gte(foodLogs.date, startOfDay.getTime()), lte(foodLogs.date, endOfDay.getTime()))),
+      db.select().from(workProjects).where(eq(workProjects.status, 'active')),
+      db.select().from(workSessions),
+    ])
 
-  const [tasks, reminders, plans, workouts, foodLogs, workProjects] = await Promise.all([
-    db.task.findMany({ orderBy: [{ status: 'asc' }, { createdAt: 'desc' }] }),
-    db.reminder.findMany({ where: { done: false }, orderBy: { datetime: 'asc' } }),
-    db.plan.findMany({ where: { status: 'active' }, include: { milestones: true } }),
-    db.gymWorkout.findMany({ where: { date: { gte: startOfWeek } }, orderBy: { date: 'desc' } }),
-    db.foodLog.findMany({ where: { date: { gte: startOfDay, lte: endOfDay } } }),
-    db.workProject.findMany({ where: { status: 'active' }, include: { sessions: true } }),
-  ])
+    const todayTasks = allTasks.filter((t) =>
+      t.status === 'pending' && (!t.dueDate || (t.dueDate >= startOfDay.getTime() && t.dueDate <= endOfDay.getTime()))
+    )
+    const upcomingReminders = allReminders.filter((r) => r.datetime >= nowMs).slice(0, 5)
+    const todayCalories = todayFoodLogs.reduce((s, l) => s + l.calories, 0)
+    const todayProtein = todayFoodLogs.reduce((s, l) => s + l.protein, 0)
+    const weekWorkoutMinutes = weekWorkouts.reduce((s, w) => s + w.duration, 0)
+    const activePlansCount = activePlans.length
+    const milestonesByPlan = allMilestones.reduce<Record<string, typeof allMilestones>>((acc, m) => {
+      if (!acc[m.planId]) acc[m.planId] = []
+      acc[m.planId].push(m)
+      return acc
+    }, {})
+    const planProgress = activePlans.map((p) => {
+      const ms = milestonesByPlan[p.id] || []
+      const progress = ms.length === 0 ? 0 : Math.round((ms.filter((m) => m.done).length / ms.length) * 100)
+      return { id: p.id, title: p.title, color: p.color, progress }
+    })
+    const weekWorkMinutes = activeWorkProjects.reduce((s, p) => {
+      return s + allWorkSessions.filter((sess) => sess.projectId === p.id && sess.start >= startOfWeek.getTime()).reduce((a, b) => a + b.duration, 0)
+    }, 0)
 
-  const todayTasks = tasks.filter(
-    (t) =>
-      t.status === 'pending' &&
-      (!t.dueDate || (t.dueDate >= startOfDay && t.dueDate <= endOfDay))
-  )
-  const upcomingReminders = reminders
-    .filter((r) => r.datetime >= now)
-    .slice(0, 5)
-  const todayCalories = foodLogs.reduce((s, l) => s + l.calories, 0)
-  const todayProtein = foodLogs.reduce((s, l) => s + l.protein, 0)
-  const weekWorkoutMinutes = workouts.reduce((s, w) => s + w.duration, 0)
-  const activePlansCount = plans.length
-  const planProgress = plans.map((p) => ({
-    id: p.id,
-    title: p.title,
-    color: p.color,
-    progress:
-      p.milestones.length === 0
-        ? 0
-        : Math.round(
-            (p.milestones.filter((m) => m.done).length / p.milestones.length) * 100
-          ),
-  }))
-
-  // Work: this week total minutes
-  const weekWorkMinutes = workProjects.reduce(
-    (s, p) =>
-      s +
-      p.sessions
-        .filter((sess) => sess.start >= startOfWeek)
-        .reduce((a, b) => a + b.duration, 0),
-    0
-  )
-
-  return NextResponse.json({
-    date: now.toISOString(),
-    stats: {
-      tasksPending: tasks.filter((t) => t.status === 'pending').length,
-      tasksToday: todayTasks.length,
-      tasksDone: tasks.filter((t) => t.status === 'done').length,
-      remindersUpcoming: reminders.length,
-      todayCalories,
-      todayProtein: Math.round(todayProtein),
-      weekWorkoutMinutes,
-      weekWorkMinutes,
-      activePlansCount,
-    },
-    todayTasks,
-    upcomingReminders,
-    planProgress,
-  })
+    return NextResponse.json({
+      date: new Date().toISOString(),
+      stats: {
+        tasksPending: allTasks.filter((t) => t.status === 'pending').length,
+        tasksToday: todayTasks.length,
+        tasksDone: allTasks.filter((t) => t.status === 'done').length,
+        remindersUpcoming: allReminders.length,
+        todayCalories,
+        todayProtein: Math.round(todayProtein),
+        weekWorkoutMinutes,
+        weekWorkMinutes,
+        activePlansCount,
+      },
+      todayTasks: serializeRows(todayTasks as any[]),
+      upcomingReminders: serializeRows(upcomingReminders as any[]),
+      planProgress,
+    })
+  } catch (e) {
+    return handleApiError(e, 'dashboard')
+  }
 }
