@@ -69,36 +69,59 @@ Installer akan otomatis:
 ### Menjalankan
 
 ```bash
-# Mode development (ada hot-reload, cocok untuk testing)
+# Mode development (ada hot-reload, auto-open Chrome)
 bash start-termux.sh
 
 # Mode production (lebih cepat & hemat baterai, untuk daily use)
-bash build-termux.sh    # build sekali
-bash start-prod.sh      # jalankan
+npm run build
+bash start-prod.sh
 ```
 
-Buka browser HP → `http://localhost:3000`
+**Chrome akan otomatis terbuka** ke `http://localhost:3000` setelah server ready (biasanya 5-10 detik).
 
-### ⚠️ Penting untuk Termux Android
+---
 
-Script `start-termux.sh` sudah otomatis menangani 3 masalah umum di Android:
+## 🚀 One-Tap Launcher (RECOMMENDED — Tidak perlu buka Termux lagi!)
 
-1. **Turbopack tidak support android/arm64** → otomatis pakai `--webpack`
-2. **Prisma client tidak ter-generate** → otomatis jalankan `prisma generate` sebelum start
-3. **Watchpack EACCES errors** → otomatis set `WATCHPACK_POLLING=true`
+Supaya tidak perlu buka Termux + ketik `bash start-termux.sh` setiap kali, setup **shortcut di Home Screen HP** — tinggal tap icon, server jalan + Chrome buka + Termux close sendiri.
 
-**JANGAN jalankan `npm run dev` langsung di Termux** — akan pakai Turbopack yang crash. Selalu pakai `bash start-termux.sh`.
+### Setup (sekali saja)
 
-### Kalau sudah pernah install tapi error Prisma
+1. **Install Termux:Widget** dari F-Droid:
+   - Download: https://f-droid.org/packages/com.termux.widget/
+   - ⚠️ JANGAN install dari Play Store (versi lama/deprecated)
 
-```bash
-# Jalankan script fix khusus
-bash fix-prisma.sh
+2. **Jalankan setup launcher**:
+   ```bash
+   cd ~/daybyday
+   bash setup-launcher.sh
+   ```
+   Script akan otomatis copy shortcut scripts ke `~/.shortcuts/`.
 
-# Atau reset total kalau masih gagal
-rm -rf node_modules .next
-bash install-termux.sh
-```
+3. **Tambah widget ke Home Screen**:
+   - Long-press area kosong di Home Screen HP
+   - Pilih **Widget**
+   - Cari **Termux:Widget** → pilih **Termux Shortcut** (1x1)
+   - Drag ke Home Screen
+   - Pilih shortcut:
+     - **"DailyLife - Start"** → untuk start app + buka Chrome
+     - **"DailyLife - Stop"** → untuk stop server (hemat baterai)
+
+### Cara Pakai Sehari-hari
+
+| Aksi | Cara |
+|---|---|
+| **Mulai app** | Tap icon "DailyLife - Start" di Home Screen → Chrome otomatis buka ke app |
+| **Stop app** | Tap icon "DailyLife - Stop" → server berhenti, baterai hemat |
+| **Cek kalau server jalan** | Buka Chrome → akses `http://localhost:3000`. Kalau loading, server mati |
+| **Akses dari device lain** | Browser HP lain di WiFi: `http://[IP-HP-Anda]:3000` |
+
+**Keunggulan**:
+- ✅ **Tidak perlu buka Termux** — tap icon langsung jalan
+- ✅ **Termux close sendiri** setelah server start (server tetap jalan di background)
+- ✅ **Wake-lock otomatis** — Android tidak akan kill server saat screen off
+- ✅ **Anti-duplikat** — kalau server sudah jalan, langsung buka Chrome tanpa start ulang
+- ✅ **Stop mudah** — tap icon Stop untuk hemat baterai
 
 ### Akses dari Device Lain di WiFi
 
