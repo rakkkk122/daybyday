@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================================
 # Daily Life Manager — Installer untuk Termux Android
+# Database: node:sqlite (built-in Node.js, no native binary)
 # ============================================================
 # Cara pakai:
 #   1. Buka Termux
@@ -17,64 +18,88 @@ echo ""
 # Cek apakah jalan di Termux
 if [ ! -d "/data/data/com.termux" ]; then
   echo "[!] Script ini untuk Termux Android."
-  echo "    Untuk Linux/Mac/Windows, gunakan: npm install && npx prisma db push"
+  echo "    Untuk Linux/Mac/Windows, gunakan: npm install"
   exit 1
 fi
 
-# Update package list
-echo "[1/7] Update package list..."
+echo "[1/5] Update package list..."
 pkg update -y > /dev/null 2>&1 || true
 
-# Install Node.js (LTS) kalau belum ada
 if ! command -v node &> /dev/null; then
-  echo "[2/7] Install Node.js..."
+  echo "[2/5] Install Node.js..."
   pkg install nodejs-lts -y
 else
-  echo "[2/7] Node.js sudah ada: $(node --version)"
+  echo "[2/5] Node.js sudah ada: $(node --version)"
 fi
 
-# Install git kalau belum
-if ! command -v git &> /dev/null; then
-  echo "[3/7] Install git..."
-  pkg install git -y
-else
-  echo "[3/7] Git sudah ada"
+# Install termux-tools untuk auto-open Chrome (termux-open-url)
+if ! command -v termux-open-url &> /dev/null; then
+  echo "[2.5/5] Install termux-tools (untuk auto-open Chrome)..."
+  pkg install termux-tools -y > /dev/null 2>&1 || true
 fi
 
-# ===== FIX: Hapus node_modules lama kalau ada (reset install bersih) =====
-if [ -d "node_modules/@prisma" ] && [ ! -f "node_modules/@prisma/client/runtime/library.js" ]; then
-  echo "[4/7] Prisma client rusak/tdk lengkap, hapus node_modules untuk install ulang..."
-  rm -rf node_modules
+# Cek Node.js version (butuh 22+ untuk node:sqlite)
+NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo "0")
+if [ "$NODE_MAJOR" -lt 22 ]; then
+  echo "    [!] Node.js $NODE_MAJOR.x terlalu lama, upgrade ke 22+..."
+  pkg upgrade nodejs-lts -y
+  NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo "0")
+  echo "    Setelah upgrade: Node.js $(node --version)"
 fi
 
-# Install dependencies
-# Penting: --build-from-source memaksa compile native modules dari source
-# karena prebuilt binary kadang tidak tersedia untuk android-arm64
-echo "[4/7] Install dependencies (mungkin butuh 5-15 menit)..."
-npm install --build-from-source 2>&1 | tail -10 || npm install 2>&1 | tail -10
+# Cek node:sqlite tersedia
+if ! node --experimental-sqlite -e "require('node:sqlite')" 2>/dev/null; then
+  echo "    [!] node:sqlite tidak tersedia. Coba upgrade Node.js:"
+  echo "    pkg upgrade nodejs-lts -y"
+fi
 
-# Setup environment file
+# ===== HAPUS sisa Prisma/libsql dari install lama (PENTING!) =====
+# npm kadang restore package lama dari cache/lockfile walau sudah diuninstall
+echo ""
+echo "[3/5] Bersihkan sisa Prisma/libsql dari install lama..."
+rm -rf node_modules/prisma node_modules/@prisma node_modules/.prisma 2>/dev/null
+rm -rf node_modules/@libsql 2>/dev/null
+rm -rf prisma/ drizzle.config.ts 2>/dev/null
+# Hapus juga package-lock.json kalau ada (mulai bersih)
+rm -f package-lock.json 2>/dev/null
+echo "    ✓ Bersih"
+
+# Install dependencies (pure JS, no native binary)
+echo ""
+echo "[4/5] Install dependencies (1-3 menit, pure JS packages)..."
+npm install --no-audit --no-fund 2>&1 | tail -5
+
+# Verify tidak ada sisa Prisma setelah install
+if [ -d "node_modules/prisma" ] || [ -d "node_modules/@prisma" ]; then
+  echo ""
+  echo "    [!] WARNING: Prisma masih ada setelah install!"
+  echo "    Hapus manual dengan:"
+  echo "    rm -rf node_modules/prisma node_modules/@prisma node_modules/.prisma"
+  rm -rf node_modules/prisma node_modules/@prisma node_modules/.prisma 2>/dev/null
+fi
+echo "    ✓ Tidak ada Prisma/libsql (verified)"
+
+# Setup environment file — ALWAYS overwrite DATABASE_URL to correct Termux path
+PROJECT_DIR="$(pwd)"
+TERMUX_DB_PATH="$PROJECT_DIR/db/custom.db"
+
 if [ ! -f .env ]; then
-  echo "[5/7] Buat file .env dari template..."
+  echo "[5/5] Buat file .env dari template..."
   cp .env.example .env
-  # Set path absolut untuk Termux
-  PROJECT_DIR="$(pwd)"
-  sed -i "s|file:./db/custom.db|file:$PROJECT_DIR/db/custom.db|g" .env
-  echo "    .env dibuat dengan DATABASE_URL=file:$PROJECT_DIR/db/custom.db"
-else
-  echo "[5/7] .env sudah ada, lewati"
 fi
 
-# ===== FIX: Generate Prisma client secara eksplisit =====
-# Ini penting karena:
-# 1. postinstall hook npm kadang tidak jalan di Termux
-# 2. Binary target harus linux-arm64 untuk Android, bukan x86_64
-echo "[6/7] Generate Prisma client untuk android-arm64..."
-npx prisma generate 2>&1 | tail -10
+# FORCE overwrite DATABASE_URL dengan path Termux yang benar
+# (handle case: .env lama dari sandbox masih ada isinya /home/z/my-project/...)
+echo "[5/5] Set DATABASE_URL ke: $TERMUX_DB_PATH"
+if grep -q "^DATABASE_URL=" .env; then
+  sed -i "s|^DATABASE_URL=.*|DATABASE_URL=file:$TERMUX_DB_PATH|" .env
+else
+  echo "DATABASE_URL=file:$TERMUX_DB_PATH" >> .env
+fi
+echo "    ✓ .env updated: DATABASE_URL=file:$TERMUX_DB_PATH"
 
-# Init database
-echo "[7/7] Init database SQLite..."
-npx prisma db push
+# Tidak perlu drizzle-kit push atau prisma db push!
+# Database auto-init saat app pertama kali start (CREATE TABLE IF NOT EXISTS)
 
 echo ""
 echo "============================================"
@@ -84,12 +109,6 @@ echo ""
 echo "Cara menjalankan:"
 echo "  bash start-termux.sh"
 echo ""
-echo "Tips Penting:"
-echo "  - Server otomatis pakai --webpack (Turbopack tidak support Android)"
-echo "  - Watchpack pakai polling (fix error EACCES permission denied)"
-echo "  - Wake lock aktif (HP tidak sleep saat app jalan)"
-echo ""
 echo "Akses:"
 echo "  - HP sendiri: http://localhost:3000"
 echo "  - Device lain di WiFi: http://[IP-HP-Anda]:3000"
-echo "  - Cek IP: ketik 'ifconfig' di Termux"
