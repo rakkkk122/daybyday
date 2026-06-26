@@ -5,6 +5,29 @@ export function handleApiError(error: unknown, context?: string): NextResponse {
   const msg = err?.message || String(error)
   const ctx = context ? `[${context}] ` : ''
 
+  // AI belum ter-config (tidak ada API key)
+  if (msg.includes('AI belum ter-config') || msg.includes('Configuration file not found')) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'AI belum ter-config. Tambahkan ZAI_API_KEY di file .env, lalu restart server.',
+        setup: 'Dapatkan API key gratis di https://z.ai → Sign Up → Dashboard → API Keys',
+      },
+      { status: 500 }
+    )
+  }
+
+  // AI request gagal (network/auth issue)
+  if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('403')) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'API key tidak valid atau expired. Cek ZAI_API_KEY di .env.',
+      },
+      { status: 500 }
+    )
+  }
+
   if (msg.includes('did not initialize yet') || msg.includes("Cannot find module '.prisma/client")) {
     return NextResponse.json(
       { ok: false, error: 'Database client belum siap. Restart server.', detail: msg },

@@ -1,13 +1,61 @@
 import ZAI from 'z-ai-web-dev-sdk'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 
 let zaiInstance: Awaited<ReturnType<typeof ZAI.create>> | null = null
 
-/** Get a shared ZAI client (singleton) */
+/**
+ * Get a shared ZAI client (singleton)
+ *
+ * Cara setup API key (pilih salah satu):
+ * 1. Set ZAI_API_KEY di .env file (auto-detected)
+ * 2. Buat file .z-ai-config di project root dengan format:
+ *    {"baseUrl":"https://api.z.ai/api/v1","apiKey":"YOUR_KEY"}
+ */
 export async function getZAI() {
   if (!zaiInstance) {
-    zaiInstance = await ZAI.create()
+    zaiInstance = await createZAIClient()
   }
   return zaiInstance
+}
+
+/** Check apakah AI sudah ter-config (untuk UI tampilkan status) */
+export function isAIConfigured(): boolean {
+  // Cek env var
+  if (process.env.ZAI_API_KEY) return true
+  // Cek file .z-ai-config
+  const configPath = path.join(process.cwd(), '.z-ai-config')
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+      if (config.apiKey) return true
+    } catch {}
+  }
+  return false
+}
+
+async function createZAIClient(): Promise<any> {
+  // Opsi 1: Pakai env var ZAI_API_KEY (paling mudah untuk user)
+  const envApiKey = process.env.ZAI_API_KEY
+  if (envApiKey) {
+    const baseUrl = process.env.ZAI_BASE_URL || 'https://api.z.ai/api/v1'
+    console.log('[ai] Using ZAI_API_KEY from environment')
+    // ZAI class accept config di constructor
+    // @ts-ignore - ZAI class exported as default
+    return new ZAI({ baseUrl, apiKey: envApiKey })
+  }
+
+  // Opsi 2: Pakai file .z-ai-config (default SDK behavior)
+  try {
+    return await ZAI.create()
+  } catch (e: any) {
+    throw new Error(
+      `AI belum ter-config. Setup salah satu:\n` +
+      `1. Tambahkan ke .env: ZAI_API_KEY=your_key (dapatkan di https://z.ai)\n` +
+      `2. Atau buat file .z-ai-config dengan: {"baseUrl":"https://api.z.ai/api/v1","apiKey":"your_key"}\n` +
+      `Detail error: ${e.message}`
+    )
+  }
 }
 
 /**
