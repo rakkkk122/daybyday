@@ -25,6 +25,11 @@ const NAV: NavItem[] = [
 
 export function BottomNav() {
   const { activeView, setActiveView } = useUIStore()
+  // Hydration guard: Zustand persist baca localStorage di client,
+  // jadi activeView bisa beda antara server render dan client.
+  // Tunggu mount dulu sebandingkan activeView supaya tidak hydration mismatch.
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
   return (
     <nav
       className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/85 backdrop-blur-lg md:hidden"
@@ -33,7 +38,7 @@ export function BottomNav() {
     >
       <div className="grid grid-cols-9 gap-0 px-0.5 py-1">
         {NAV.map((item) => {
-          const active = activeView === item.key
+          const active = mounted && activeView === item.key
           const Icon = item.icon
           return (
             <button
@@ -60,6 +65,9 @@ export function BottomNav() {
 
 export function Sidebar() {
   const { activeView, setActiveView } = useUIStore()
+  // Hydration guard: sama seperti BottomNav
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
   return (
     <aside className="hidden md:flex md:w-60 lg:w-64 md:flex-col md:fixed md:inset-y-0 md:left-0 border-r border-border bg-sidebar">
       <div className="px-5 py-5 border-b border-border">
@@ -70,7 +78,7 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1" aria-label="Navigasi samping">
         {NAV.map((item) => {
-          const active = activeView === item.key
+          const active = mounted && activeView === item.key
           const Icon = item.icon
           return (
             <button
@@ -84,7 +92,7 @@ export function Sidebar() {
               )}
               aria-current={active ? 'page' : undefined}
             >
-              <Icon className="h-4.5 w-4.5 shrink-0" />
+              <Icon className="h-5 w-5 shrink-0" />
               {item.label}
             </button>
           )
