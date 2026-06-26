@@ -31,7 +31,7 @@ export function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navigasi utama"
     >
-      <div className="grid grid-cols-9 gap-0.5 px-1 py-1.5">
+      <div className="grid grid-cols-9 gap-0 px-0.5 py-1">
         {NAV.map((item) => {
           const active = activeView === item.key
           const Icon = item.icon
@@ -40,7 +40,7 @@ export function BottomNav() {
               key={item.key}
               onClick={() => setActiveView(item.key)}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 text-[10px] font-medium transition-all active:scale-95 min-h-[44px]',
+                'flex flex-col items-center justify-center gap-0.5 rounded-md py-1 text-[9px] font-medium transition-all active:scale-95 min-h-[40px] whitespace-nowrap',
                 active
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -48,7 +48,7 @@ export function BottomNav() {
               aria-current={active ? 'page' : undefined}
               aria-label={item.label}
             >
-              <Icon className={cn('h-5 w-5', active && 'scale-110')} />
+              <Icon className={cn('h-4 w-4', active && 'scale-110')} />
               <span className="truncate max-w-full">{item.label}</span>
             </button>
           )
