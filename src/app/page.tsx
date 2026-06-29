@@ -2,11 +2,13 @@
 
 import * as React from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Settings } from 'lucide-react'
+import { Settings, Sparkles } from 'lucide-react'
 import { useUIStore } from '@/store/ui-store'
 import { Sidebar, BottomNav } from '@/components/nav-shell'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { SettingsSheet } from '@/components/settings-sheet'
+import { GrammarModal } from '@/components/grammar-modal'
+import { FloatingGrammarButton } from '@/components/floating-grammar-button'
 import { DashboardView } from '@/components/views/dashboard'
 import { TasksView } from '@/components/views/tasks'
 import { RemindersView } from '@/components/views/reminders'
@@ -20,6 +22,7 @@ import { StatsView } from '@/components/views/stats'
 export default function Home() {
   const { activeView, setActiveView } = useUIStore()
   const [settingsOpen, setSettingsOpen] = React.useState(false)
+  const [grammarOpen, setGrammarOpen] = React.useState(false)
   const [refreshKey, setRefreshKey] = React.useState(0)
   // Hydration guard: Zustand persist baca localStorage di client,
   // jadi activeView bisa beda antara server render dan client.
@@ -71,6 +74,16 @@ export default function Home() {
           <span>Personal Manager — Self-hosted</span>
         </div>
         <div className="flex items-center gap-1">
+          {/* Grammar button — visible di semua ukuran, tapi di mobile juga ada FAB */}
+          <button
+            onClick={() => setGrammarOpen(true)}
+            style={{ width: 40, height: 40 }}
+            className="text-muted-foreground hover:text-primary rounded-md hover:bg-accent/50 shrink-0 flex items-center justify-center group"
+            aria-label="Perbaiki grammar"
+            title="Perbaiki Grammar (desktop)"
+          >
+            <Sparkles className="h-5 w-5 group-hover:text-primary transition-colors" />
+          </button>
           <button
             onClick={() => setSettingsOpen(true)}
             style={{ width: 40, height: 40 }}
@@ -110,6 +123,12 @@ export default function Home() {
 
       {/* Spacer for bottom nav on mobile */}
       <div className="h-16 md:hidden" aria-hidden />
+
+      {/* Floating Grammar Button (mobile only) */}
+      <FloatingGrammarButton />
+
+      {/* Grammar Modal (triggered dari top bar button) */}
+      <GrammarModal open={grammarOpen} onOpenChange={setGrammarOpen} />
 
       <SettingsSheet
         open={settingsOpen}
