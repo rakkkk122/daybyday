@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { tasks, reminders, plans, planMilestones, gymWorkouts, foodLogs as foodLogsTable, workProjects, workSessions } from '@/db/schema'
 import { gte } from 'drizzle-orm'
-import { askAIJSON } from '@/lib/ai'
+import { askAISmartJSON } from '@/lib/ai'
 import { handleApiError } from '@/lib/api-error'
 
 export async function GET() {
@@ -65,12 +65,18 @@ Berikan 3-5 insight terpenting.`
 
     const userMessage = `Berikut ringkasan data 30 hari user:\n${JSON.stringify(dataSummary, null, 2)}\n\nAnalisis dan berikan insight.`
 
-    const result = await askAIJSON<{ summary: string; insights: Array<{ type: string; severity: 'positive' | 'neutral' | 'warning'; title: string; body: string; recommendation: string }> }>(
-      systemPrompt, userMessage, { temperature: 0.6 }
-    )
+    const { data: result, engine, model } = await askAISmartJSON<{
+      summary: string
+      insights: Array<{ type: string; severity: 'positive' | 'neutral' | 'warning'; title: string; body: string; recommendation: string }>
+    }>(systemPrompt, userMessage, {
+      temperature: 0.6,
+      timeoutMs: 240000, // Insight paling berat, kasih timeout 4 menit
+    })
 
     return NextResponse.json({
       ok: true,
+      engine,
+      model,
       generatedAt: now.toISOString(),
       dataRange: dataSummary.range,
       summary: result.summary || '',

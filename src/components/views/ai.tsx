@@ -173,7 +173,7 @@ function FoodSuggestTab() {
       const json = await res.json()
       if (!res.ok || !json.ok) throw new Error(json.error || 'Gagal')
       setData(json)
-      toast.success(`${json.suggestions.length} saran makanan siap!`)
+      toast.success(`${json.suggestions.length} saran makanan siap! ${json.engine === 'ollama' ? '(🦙 Ollama offline)' : '(✨ ZAI online)'}`)
     } catch (e: any) {
       toast.error(`Gagal: ${e.message}`)
     } finally {
@@ -367,7 +367,7 @@ function PlanGenerateTab() {
       const json = await res.json()
       if (!res.ok || !json.ok) throw new Error(json.error || 'Gagal')
       setData(json)
-      toast.success('Rencana siap! Review lalu buat.')
+      toast.success(`Rencana siap! ${json.engine === 'ollama' ? '(🦙 Ollama)' : '(✨ ZAI)'}. Review lalu buat.`)
     } catch (e: any) {
       toast.error(`Gagal: ${e.message}`)
     } finally {
@@ -596,7 +596,7 @@ function InsightsTab() {
       const json = await res.json()
       if (!res.ok || !json.ok) throw new Error(json.error || 'Gagal')
       setData(json)
-      toast.success('Insight siap!')
+      toast.success(`Insight siap! ${json.engine === 'ollama' ? '(🦙 Ollama)' : '(✨ ZAI)'}`)
     } catch (e: any) {
       toast.error(`Gagal: ${e.message}`)
     } finally {

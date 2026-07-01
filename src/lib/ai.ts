@@ -163,3 +163,83 @@ export function parseAIJson<T = any>(raw: string): T {
     )
   }
 }
+
+// ============================================================
+// SMART AI — Ollama + ZAI fallback (untuk fitur AI yang sudah ada)
+// ============================================================
+// Strategi: Ollama dulu (offline, gratis) → fallback ZAI (online)
+// Ollama status di-cache 30 detik supaya tidak check terus
+
+import { askOllama, checkOllama } from './ollama'
+
+let ollamaStatusCache: { available: boolean; model: string; error?: string; checkedAt: number } | null = null
+const OLLAMA_CACHE_MS = 30000
+
+async function getCachedOllamaStatus() {
+  if (ollamaStatusCache && Date.now() - ollamaStatusCache.checkedAt < OLLAMA_CACHE_MS) {
+    return ollamaStatusCache
+  }
+  const status = await checkOllama()
+  ollamaStatusCache = { ...status, checkedAt: Date.now() }
+  return ollamaStatusCache
+}
+
+export interface SmartAIResult {
+  content: string
+  engine: 'ollama' | 'zai'
+  model: string
+  ollamaError?: string
+}
+
+/**
+ * Smart AI call — Ollama dulu, fallback ZAI.
+ * Return content + metadata engine yang dipakai.
+ */
+export async function askAISmart(
+  systemPrompt: string,
+  userMessage: string,
+  opts: { temperature?: number; maxRetries?: number; timeoutMs?: number; preferEngine?: 'ollama' | 'zai' | 'auto' } = {}
+): Promise<SmartAIResult> {
+  const {
+    temperature = 0.7,
+    maxRetries = 1,
+    timeoutMs = 120000,
+    preferEngine = 'auto',
+  } = opts
+
+  // ===== 1. Coba Ollama dulu (kalau preferEngine = auto atau ollama) =====
+  if (preferEngine !== 'zai') {
+    const status = await getCachedOllamaStatus()
+    if (status.available) {
+      try {
+        const content = await askOllama(systemPrompt, userMessage, { temperature, timeoutMs })
+        return { content, engine: 'ollama', model: status.model }
+      } catch (e: any) {
+        console.warn('[askAISmart] Ollama failed, fallback to ZAI:', e.message)
+        // Lanjut ke ZAI
+      }
+    }
+  }
+
+  // ===== 2. Fallback ke ZAI =====
+  if (preferEngine === 'ollama') {
+    throw new Error('Ollama gagal dan preferEngine=ollama, tidak fallback ke ZAI')
+  }
+
+  const content = await askAI(systemPrompt, userMessage, { temperature, maxRetries })
+  return { content, engine: 'zai', model: 'glm-4' }
+}
+
+/**
+ * Smart AI call + parse JSON response.
+ * Return parsed JSON + metadata engine.
+ */
+export async function askAISmartJSON<T = any>(
+  systemPrompt: string,
+  userMessage: string,
+  opts?: { temperature?: number; maxRetries?: number; timeoutMs?: number; preferEngine?: 'ollama' | 'zai' | 'auto' }
+): Promise<{ data: T; engine: 'ollama' | 'zai'; model: string }> {
+  const result = await askAISmart(systemPrompt, userMessage, opts)
+  const data = parseAIJson<T>(result.content)
+  return { data, engine: result.engine, model: result.model }
+}

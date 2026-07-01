@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { askAIJSON } from '@/lib/ai'
+import { askAISmartJSON } from '@/lib/ai'
 import { handleApiError } from '@/lib/api-error'
 
 export async function POST(req: NextRequest) {
@@ -23,9 +23,15 @@ WAJIB jawab dengan JSON valid saja (tanpa markdown fence), format:
 
     const userMessage = `Goal: ${goal}\nTimeframe: ${timeframe} (target tanggal: ${targetDate.toISOString().slice(0, 10)})\n${body.context ? `Konteks: ${body.context}` : ''}\n\nBuatkan plan lengkap dengan 3-6 milestone.`
 
-    const result = await askAIJSON<{ title: string; description: string; color: string; milestones: Array<{ title: string; dueOffsetDays: number }> }>(
-      systemPrompt, userMessage, { temperature: 0.7 }
-    )
+    const { data: result, engine, model } = await askAISmartJSON<{
+      title: string
+      description: string
+      color: string
+      milestones: Array<{ title: string; dueOffsetDays: number }>
+    }>(systemPrompt, userMessage, {
+      temperature: 0.7,
+      timeoutMs: 180000,
+    })
 
     if (!result.title || !Array.isArray(result.milestones)) throw new Error('Format AI tidak valid')
     const validColors = ['emerald', 'amber', 'rose', 'violet', 'teal', 'orange']
@@ -33,6 +39,8 @@ WAJIB jawab dengan JSON valid saja (tanpa markdown fence), format:
 
     return NextResponse.json({
       ok: true,
+      engine,
+      model,
       targetDate: targetDate.toISOString(),
       plan: {
         title: result.title,

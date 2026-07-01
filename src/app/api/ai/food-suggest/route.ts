@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { foodLogs, gymWorkouts } from '@/db/schema'
 import { gte, desc } from 'drizzle-orm'
-import { askAIJSON } from '@/lib/ai'
+import { askAISmartJSON } from '@/lib/ai'
 import { handleApiError } from '@/lib/api-error'
 
 export async function POST(req: NextRequest) {
@@ -53,12 +53,17 @@ Berikan 3-4 suggestion. "reason" jelaskan singkat kenapa cocak (1 kalimat).`
 
     const userMessage = `Konteks data user:\n${JSON.stringify(context, null, 2)}\n\nBerikan 3 saran makanan untuk ${mealType}.`
 
-    const result = await askAIJSON<{ suggestions: Array<{ name: string; calories: number; protein: number; carbs: number; fats: number; reason: string }> }>(
-      systemPrompt, userMessage, { temperature: 0.6 }
-    )
+    const { data: result, engine, model } = await askAISmartJSON<{
+      suggestions: Array<{ name: string; calories: number; protein: number; carbs: number; fats: number; reason: string }>
+    }>(systemPrompt, userMessage, {
+      temperature: 0.6,
+      timeoutMs: 180000, // Ollama 1.5b bisa lambat untuk JSON
+    })
 
     return NextResponse.json({
       ok: true,
+      engine,
+      model,
       context: { todayConsumed: context.todayConsumed, remaining: context.remaining, gymTodayMinutes: gymToday, avgCalPerDay },
       suggestions: result.suggestions || [],
     })
